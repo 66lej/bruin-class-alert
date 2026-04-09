@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.DS_Store
+.bruin_alert_state.json
+.*state*.json
+logs/
+geog7_live.html
+.env
+config.json

@@ -1,30 +1,30 @@
 # Bruin Class Alert
 
-一个基于 Python 3 的 UCLA 选课提醒脚本。它会定期查询 UCLA 当前的 Schedule of Classes 页面，在你关注的 section 有 seat open 时发出通知。
+A Python 3 UCLA class availability monitor. It periodically checks the current UCLA Schedule of Classes pages and sends notifications when a watched section has an open seat.
 
-## 为什么不用旧仓库
+## Why not use the old repo?
 
-你找到的参考仓库思路是对的，但它依赖的是 2013 年左右的页面结构和 Python 2 生态：
+The older UCLA class alert scripts had the right idea, but they were built around an older UCLA site structure and an outdated Python stack:
 
-- 抓的是旧版 Registrar HTML。
-- 依赖 Python 2、`execfile` 和 BeautifulSoup 3。
-- 用的是 Gmail 明文密码式 SMTP 配置。
+- They scraped older Registrar HTML pages.
+- They depended on Python 2, `execfile`, and BeautifulSoup 3.
+- They used legacy SMTP patterns such as plain Gmail password login.
 
-这个新版直接查询现在的 UCLA Schedule of Classes 搜索结果页，并按当前页面结构解析 section 状态。
+This version targets the current UCLA Schedule of Classes search results pages and parses the current section status layout.
 
-## 功能
+## Features
 
-- 支持 Python 3
-- 支持多门课同时监控
-- 支持按 section 过滤，比如 `Lec 1`、`Dis 1A`
-- 支持自动尝试常见 UCLA 课号格式，比如把 `31` 自动尝试成 `0031`
-- 默认支持 macOS 桌面通知
-- 支持 Discord webhook 手机提醒
-- 支持 SMTP 邮件提醒
-- 支持本机 Chrome 上的 MyUCLA 自动 enroll 尝试
-- 会记住已经提醒过的 open 状态，避免每轮轮询都重复轰炸
+- Python 3
+- Monitor multiple classes at once
+- Filter by section, such as `Lec 1` or `Dis 1A`
+- Automatically normalize common UCLA catalog formats, such as turning `31` into `0031`
+- macOS desktop notifications
+- Discord webhook notifications
+- SMTP email notifications
+- Optional local MyUCLA auto-enroll flow through Google Chrome
+- State tracking to avoid spamming the same alert every polling cycle
 
-## 安装
+## Installation
 
 ```bash
 python3 -m pip install -r requirements.txt
@@ -32,36 +32,36 @@ cp config.example.json config.json
 cp .env.example .env
 ```
 
-## 配置
+## Configuration
 
-编辑 `config.json`。
+Edit `config.json`.
 
-### 基本字段
+### Top-level fields
 
-- `poll_interval_seconds`: 轮询间隔，建议 60 秒或更慢
-- `request_timeout_seconds`: 每次请求的超时时间
-- `request_retries`: 遇到 UCLA 网络抖动时的自动重试次数
-- `retry_backoff_seconds`: 每次重试前的退避秒数
-- `watchlist`: 你要监控的课
+- `poll_interval_seconds`: polling interval in seconds; `60` or slower is recommended
+- `request_timeout_seconds`: timeout for each UCLA request
+- `request_retries`: automatic retries when UCLA or the network is flaky
+- `retry_backoff_seconds`: backoff delay before each retry
+- `watchlist`: the classes you want to monitor
 
-### watchlist 里每一项
+### Watchlist entries
 
-- `term`: UCLA term code，例如 `26S`，也可以写成 `Spring 2026`
-- `subject`: UCLA subject code，例如 `COM SCI`，也可以写成 `Computer Science`
-- `catalog`: 课程号，例如 `31`、`100A`、`M146`
-- `section`: 可选。如果不写，就表示这门课任何一个 section open 都提醒
-- `session_group`: 可选。夏季学期需要时可写，比如 `A%`、`C6`
-- `notify_on_waitlist`: 可选。默认 `false`。如果设成 `true`，waitlist 还有空间时也提醒
+- `term`: UCLA term code such as `26S`, or a readable form such as `Spring 2026`
+- `subject`: UCLA subject code such as `COM SCI`, or a readable subject name
+- `catalog`: course number such as `31`, `100A`, or `M146`
+- `section`: optional; if omitted, any open section for that course can trigger an alert
+- `session_group`: optional; useful for summer sessions such as `A%` or `C6`
+- `notify_on_waitlist`: optional, default `false`; if `true`, the script also alerts when the waitlist still has room
 
-### 本机自动 Enroll
+### Local auto-enroll
 
-`auto_enroll` 是可选的。本机自动 enroll 当前只支持：
+`auto_enroll` is optional. The current local auto-enroll flow only supports:
 
 - `macOS`
 - `Google Chrome`
-- 你已经在本机 Chrome 里手动登录过 `MyUCLA`
+- an existing manual MyUCLA login in your local Chrome profile
 
-推荐先保守使用：
+A conservative starting configuration looks like this:
 
 ```json
 "auto_enroll": {
@@ -70,39 +70,39 @@ cp .env.example .env
 }
 ```
 
-默认行为是：
+Default behavior:
 
-- 只有真正有 seat open 时才尝试自动 enroll
-- 不会因为 waitlist 有位置就自动把你送进 waitlist
-- 会复用你本机 Chrome 当前登录态，不保存 UCLA 密码
+- Auto-enroll only runs when a real seat is open
+- It does not join the waitlist unless you explicitly enable `allow_waitlist_auto_enroll`
+- It reuses your local Chrome login session and does not store your UCLA password
 
-第一次使用前，先手动打开 MyUCLA 登录页：
+Before using it for the first time, open the MyUCLA login flow:
 
 ```bash
 python3 myucla_auto_enroll.py --setup-login
 ```
 
-在 Chrome 里完成 UCLA Logon 和 Duo 之后，以后监控脚本就会在检测到 open seat 时自动尝试。
+Complete UCLA Logon and Duo in Chrome. After that, the monitor can attempt local auto-enroll when it detects an opening.
 
-另外需要在 Chrome 打开这个开关：
+You also need this Chrome setting enabled:
 
 - `View > Developer > Allow JavaScript from Apple Events`
 
-如果这个开关没开，脚本可以打开 Chrome，但不能真正驱动页面点击。
+Without that setting, the script can open Chrome but cannot drive the page interactions.
 
-如果你想先确认本机浏览器控制没问题，可以跑：
+To verify local browser automation before relying on auto-enroll, run:
 
 ```bash
 python3 myucla_auto_enroll.py --self-test
 ```
 
-注意：
+Notes:
 
-- `GEOG 7` 这种需要 `Lecture + Laboratory` 的课，我现在的策略是自动选择当前 enroll flow 里第一个可选 secondary section
-- 如果 MyUCLA 弹出 `PTE`、特殊 warning、限制条件或登录过期，脚本会停止自动动作并把结果写进通知正文
-- 这部分是 best-effort，本机浏览器 DOM 以后如果 UCLA 改版，可能需要再调
+- For classes like `GEOG 7` that require `Lecture + Laboratory`, the current strategy is to select the first available secondary section if you do not specify one
+- If MyUCLA shows a `PTE`, warning, restriction, expired login, or another blocking state, the script stops the automated action and includes the outcome in the notification text
+- This is a best-effort local browser automation flow, so if UCLA changes the MyUCLA DOM it may need updates
 
-### 通知方式
+### Notification methods
 
 #### macOS
 
@@ -121,9 +121,9 @@ python3 myucla_auto_enroll.py --self-test
 }
 ```
 
-#### 邮件
+#### Email
 
-建议用 Gmail App Password，不要用主密码。
+Using a Gmail App Password is recommended instead of your main account password.
 
 ```json
 "email": {
@@ -138,48 +138,48 @@ python3 myucla_auto_enroll.py --self-test
 }
 ```
 
-然后在 `.env` 里填：
+Then fill in `.env`:
 
 ```bash
-BRUIN_ALERT_DISCORD_WEBHOOK_URL='你的 Discord webhook'
-BRUIN_ALERT_EMAIL_USERNAME='你的 Gmail'
-BRUIN_ALERT_EMAIL_FROM='发件邮箱'
-BRUIN_ALERT_EMAIL_TO='收件邮箱'
-BRUIN_ALERT_SMTP_PASSWORD='你的 Gmail app password'
+BRUIN_ALERT_DISCORD_WEBHOOK_URL='your Discord webhook'
+BRUIN_ALERT_EMAIL_USERNAME='your email account'
+BRUIN_ALERT_EMAIL_FROM='sender email'
+BRUIN_ALERT_EMAIL_TO='recipient email'
+BRUIN_ALERT_SMTP_PASSWORD='your Gmail app password'
 ```
 
-## 运行
+## Running
 
-先跑一次单次检查：
+Start with a one-time check:
 
 ```bash
 python3 bruin_alert.py --config config.json --once --debug
 ```
 
-如果输出正常，再持续运行：
+If the output looks correct, run it continuously:
 
 ```bash
 python3 bruin_alert.py --config config.json
 ```
 
-脚本启动时会自动读取当前目录下的 `.env`。如果 Discord 或 Email 的变量还没填好，它会先跳过这些通道，但桌面通知和终端输出仍然能继续工作。
+The script automatically loads `.env` from the current directory. If Discord or email variables are missing, those channels are skipped, while terminal output and macOS notifications can still keep working.
 
-## 辅助命令
+## Helper commands
 
-列出当前 UCLA term：
+List the current UCLA terms:
 
 ```bash
 python3 bruin_alert.py --list-terms
 ```
 
-列出当前 UCLA subject：
+List the current UCLA subjects:
 
 ```bash
 python3 bruin_alert.py --list-subjects
 ```
 
-## 使用建议
+## Practical tips
 
-- 不要把轮询间隔设得太快，`60` 秒通常已经够用了。
-- 先用 `--once --debug` 看脚本到底识别出了哪些 section 名称，再决定 `section` 字段怎么填。
-- 如果你合上笔记本或者电脑睡眠，本地桌面通知当然也不会弹。想要 24/7 跑的话，可以放到一直在线的机器上，再配 Discord 或邮件提醒。
+- Do not poll too aggressively; `60` seconds is usually enough
+- Use `--once --debug` first so you can confirm the exact section labels UCLA is returning before deciding how to fill the `section` field
+- If your laptop sleeps or shuts down, local monitoring and local desktop notifications stop too; for 24/7 monitoring, run it on an always-on machine and use Discord or email alerts

@@ -1,0 +1,17 @@
+{
+  "poll_interval_seconds": 60,
+  "request_timeout_seconds": 20,
+  "notifiers": {
+    "macos": true,
+    "discord_webhook_url": ""
+  },
+  "watchlist": [
+    {
+      "name": "PHYSCI 5 validation",
+      "term": "26S",
+      "subject": "PHYSCI",
+      "catalog": "5",
+      "section": "Lec 1"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "poll_interval_seconds": 60,
+  "request_timeout_seconds": 20,
+  "request_retries": 3,
+  "retry_backoff_seconds": 2,
+  "auto_enroll": {
+    "enabled": false,
+    "allow_waitlist_auto_enroll": false,
+    "chrome_app_name": "Google Chrome",
+    "login_url": "https://my.ucla.edu/directLink.aspx?featureID=203",
+    "search_page_url": "https://sa.ucla.edu/ro/classsearch",
+    "open_timeout_seconds": 20,
+    "action_timeout_seconds": 30
+  },
+  "notifiers": {
+    "macos": true,
+    "discord_webhook_url": "",
+    "discord_webhook_env": "BRUIN_ALERT_DISCORD_WEBHOOK_URL",
+    "email": {
+      "enabled": true,
+      "smtp_host": "smtp.gmail.com",
+      "smtp_port": 587,
+      "use_tls": true,
+      "username": "",
+      "username_env": "BRUIN_ALERT_EMAIL_USERNAME",
+      "password_env": "BRUIN_ALERT_SMTP_PASSWORD",
+      "from_email": "",
+      "from_email_env": "BRUIN_ALERT_EMAIL_FROM",
+      "to_email": "",
+      "to_email_env": "BRUIN_ALERT_EMAIL_TO"
+    }
+  },
+  "watchlist": [
+    {
+      "name": "PHYSCI 5 validation",
+      "term": "26S",
+      "subject": "PHYSCI",
+      "catalog": "5",
+      "section": "Lec 1"
+    }
+  ]
+}
